@@ -55,7 +55,7 @@ module.exports = class PSW1 extends EventEmitter
             if err then return @emit 'error', err
             @emit 'scan', buffer
             try
-              for i in [0..@scan.count]
+              for i in [1..@scan.count]
                 fs.unlinkSync "#{@scan.dir.name}/i#{i}.jpg"
               @scan.dir.removeCallback()
             catch e
