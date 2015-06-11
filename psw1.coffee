@@ -1,6 +1,9 @@
 
 net = require 'net'
 xml2js = require 'xml2js'
+gm = require 'gm'
+tmp = require 'tmp'
+fs = require 'fs'
 EventEmitter = (require 'events').EventEmitter
 
 module.exports = class PSW1 extends EventEmitter
@@ -40,7 +43,21 @@ module.exports = class PSW1 extends EventEmitter
           if err then throw err
           @config = config
         @mode = 'ready'
-        @scan = len: 0, count: 0, total: parseInt len
+        @scan =
+          len: 0
+          count: 0
+          total: parseInt len
+          image: gm 0, 0, '#ffffffff'
+          dir: tmp.dirSync()
+          buf: new Buffer 0
+
+        @sock.on 'close', =>
+          @scan.image.write process.argv[3], (err)->
+            if err then throw err
+            try
+              for i in [0..@scan.count]
+                fs.unlinkSync "#{@scan.dir.name}/i#{i}.jpg"
+              @scan.dir.removeCallback()
       when 'ready'
         matches = bufStr.match /^\[JpegFrame\]\[(\d+)\]/
         if matches
@@ -50,14 +67,19 @@ module.exports = class PSW1 extends EventEmitter
           @scan.len = 0
           @scan.total = len
           @_queueReconnect()
-        else
+          buf = buf.slice matches[0].length
+
+        if buf.length
           @scan.len += buf.length
           @_log 'scan (' + @scan.count + '):',
             ((((@scan.len / @scan.total)*100).toFixed(2)) + '%')
 
-          console.log "\x1b[34m", @scan, "\x1b[0m"
+          @scan.buf = Buffer.concat [@scan.buf, buf]
+
           if @scan.len is @scan.total
             @scan.count++
+            @_appendBuffer @scan.buf
+            @scan.buf = new Buffer 0
       else
         throw 'unknown scanner state'
 
@@ -68,6 +90,13 @@ module.exports = class PSW1 extends EventEmitter
           @_log 'WARNING: socket was closed due to an error'
         @connect()
       @queued = yes
+
+  _appendBuffer: (buf)->
+    # This is because GM doesn't support .append(Buffer).
+    dir = @scan.dir.name
+    name = "#{dir}/i#{@scan.count}.jpg"
+    fs.writeFileSync name, buf
+    @scan.image.append name
 
   _log: (strs...)->
     if @debug
