@@ -34,7 +34,6 @@ module.exports = class PSW1 extends EventEmitter
     @_log 'closed connection to scanner at', @host
 
   process: (buf)->
-#    console.log '\x1b[30;1m' + (require('hexy').hexy buf) + '\x1b[0m'
     bufStr = buf.toString()
 
     switch @mode
@@ -52,17 +51,19 @@ module.exports = class PSW1 extends EventEmitter
           buf: new Buffer 0
 
         @sock.on 'close', =>
-          @scan.image.write process.argv[3], (err)->
-            if err then throw err
+          @scan.image.toBuffer 'JPEG', (err, buffer)=>
+            if err then return @emit 'error', err
+            @emit 'scan', buffer
             try
               for i in [0..@scan.count]
                 fs.unlinkSync "#{@scan.dir.name}/i#{i}.jpg"
               @scan.dir.removeCallback()
+            catch e
+              @emit 'error', e.toString()
       when 'ready'
         matches = bufStr.match /^\[JpegFrame\]\[(\d+)\]/
         if matches
           len = parseInt matches[1]
-          console.log '\x1b[31m' + bufStr + '\x1b[0m'
           @_log 'receiving jpeg, length:', len
           @scan.len = 0
           @scan.total = len
