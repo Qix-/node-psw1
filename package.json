@@ -1,5 +1,5 @@
 {
-  "name": "aukey-psw1",
+  "name": "psw1",
   "description": "Interface for the AUKEY PS-W1 scanner",
   "version": "0.1.0",
   "main": "./psw1.js",
