@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "main": "./psw1.js",
   "dependencies": {
+    "gm": "^1.18.1",
     "xml2js": "^0.4.9"
   }
 }
