@@ -2,5 +2,8 @@
   "name": "aukey-psw1",
   "description": "Interface for the AUKEY PS-W1 scanner",
   "version": "0.1.0",
-  "main": "./psw1.js"
+  "main": "./psw1.js",
+  "dependencies": {
+    "xml2js": "^0.4.9"
+  }
 }
